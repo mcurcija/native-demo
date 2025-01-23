@@ -1,0 +1,16 @@
+[
+	{
+		"_class" : "com.example.demo.model.Subscription", 
+		"id": "aa78baca-d552-4469-98b3-a4203d05fd0a",
+		"firstName": "Han",
+		"lastName": "Solo",
+		"email": "han.solo@example.com"
+	},
+	{
+		"_class" : "com.example.demo.model.Subscription",
+		"id": "d34db9aa-c8a8-46f0-bce3-fb10d4621b2a",
+		"firstName": "Tobias",
+		"lastName": "Beckett",
+		"email": "tobias.beckett@example.com"
+	}
+]
