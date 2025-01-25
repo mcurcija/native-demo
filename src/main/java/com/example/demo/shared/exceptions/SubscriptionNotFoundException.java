@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 
+@SuppressWarnings("serial")
 public class SubscriptionNotFoundException extends ApiException {
 	
 	private static final String DETAIL_TEMPLATE = "Subscription with id: %s does not exist";

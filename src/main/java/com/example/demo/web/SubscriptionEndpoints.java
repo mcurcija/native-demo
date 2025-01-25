@@ -45,13 +45,13 @@ public class SubscriptionEndpoints {
 	}
 
 	@GetMapping("subscriptions/{id}")
-	public Subscription get(@PathVariable("id") UUID id) {
+	public Subscription get(@PathVariable UUID id) {
 		Optional<Subscription> optional = subscriptionRepository.findById(id);
 		return optional.orElseThrow(() -> new SubscriptionNotFoundException(id));
 	}
 
 	@PutMapping("subscriptions/{id}")
-	public Subscription replace(@PathVariable("id") UUID id,
+	public Subscription replace(@PathVariable UUID id,
 			@RequestBody Subscription subscription) {
 		return subscriptionRepository.save(subscription);
 	}

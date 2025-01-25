@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 
+@SuppressWarnings("serial")
 public class DuplicateSupbsciptionException extends ApiException {
 
 	public static final String DETAIL_TEMPLATE = "Subscription with id: %s already exists";
