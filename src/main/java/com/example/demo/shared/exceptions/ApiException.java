@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 
+@SuppressWarnings("serial")
 public class ApiException extends RuntimeException {
 
 	private HttpStatus status;
