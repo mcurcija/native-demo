@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: native-demo  
+  jackson:
+    serialization:
+      write-dates-as-timestamps: true
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non-null 

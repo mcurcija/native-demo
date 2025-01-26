@@ -55,7 +55,7 @@ class SubscriptionEndpointsTest {
 	@DisplayName("should get single subscription")
 	void shouldGetSingleCorrectly() {
 		when(subscriptionRepository.findById(hanSolo.id())).thenReturn(Optional.of(hanSolo));
-
+		
 		var actual = webTestClient
 				.get().uri("/subscriptions/{id}", hanSolo.id())
 				.accept(MediaType.APPLICATION_JSON)
