@@ -12,35 +12,34 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import com.example.demo.model.Subscription;
 import com.example.demo.model.SubscriptionFixture;
 import com.example.demo.shared.MongoDBConfiguration;
-import com.example.demo.shared.ObjectMapperConfiguration;
 import com.example.demo.shared.conf.TestMongoDBConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @DataMongoTest
-@Import({ MongoDBConfiguration.class, ObjectMapperConfiguration.class, TestMongoDBConfiguration.class })
+@Import({ 
+	MongoDBConfiguration.class, 
+	TestMongoDBConfiguration.class
+})
 class SubscriptionRepositoryTest {
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
 	public final static String[] AUDIT_FIELD_NAMES = { "version", "createdOn", "modifiedOn" };
 
 	@Autowired
 	SubscriptionRepository cut;
 
-	@Autowired
-	ObjectMapper mapper;
-
 	@Test
 	void shouldFindAllCorrectly() throws Exception {
 		List<Subscription> all = cut.findAll();
 		assertThat(all).hasSize(2);
-		logger.info(mapper.writeValueAsString(all));
 	}
 
 	@Test
