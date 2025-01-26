@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public abstract class SubscriptionFixture {
@@ -14,5 +15,13 @@ public abstract class SubscriptionFixture {
 	public static Subscription subscription(UUID uuid) {
 		return new Subscription(uuid, "Han", "Solo", "han.solo@example.com");
 	}
+	
+	public static Subscription withAuditFields(Subscription subscription, 
+			Instant createdOn, Instant modifiedOn, Integer version) {
+		return new Subscription(
+			subscription.id(), subscription.firstName(), subscription.lastName(), subscription.email(),
+			null, createdOn, modifiedOn, version);
+	}
+	
 
 }

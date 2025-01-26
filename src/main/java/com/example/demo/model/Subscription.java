@@ -23,6 +23,7 @@ public record Subscription(
 		// NOTE ! version
 		@Version Integer version
 ) {
+	
 	public Subscription(UUID id, String firstName, String lastName, String email) {
 		this(id, firstName, lastName, email, null, null, null, null);
 	}
