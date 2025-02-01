@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,7 +37,7 @@ public class SubscriptionEndpoints {
 	}
 
 	@PostMapping("subscriptions")
-	public ResponseEntity<Subscription> createSubscription(@RequestBody Subscription subscription) {
+	public ResponseEntity<Subscription> createSubscription(@Validated @RequestBody Subscription subscription) {
 		Subscription created = subscriptionService.createSubscription(subscription);
 		URI location = ServletUriComponentsBuilder
 				.fromCurrentRequest().path("/{id}").buildAndExpand(created.id()).toUri();

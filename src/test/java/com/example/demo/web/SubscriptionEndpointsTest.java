@@ -2,6 +2,7 @@ package com.example.demo.web;
 
 import static com.example.demo.model.SubscriptionFixture.hanSolo;
 import static com.example.demo.model.SubscriptionFixture.subscription;
+import static com.example.demo.model.SubscriptionFixture.withAuditFields;
 import static com.example.demo.shared.exceptions.ProblemDetailUtils.problemDetailFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,12 +35,16 @@ import com.example.demo.persistence.SubscriptionRepository;
 import com.example.demo.service.SubscriptionService;
 import com.example.demo.shared.exceptions.DuplicateSupbsciptionException;
 import com.example.demo.shared.exceptions.SubscriptionNotFoundException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @WebMvcTest(SubscriptionEndpoints.class)
 @DisabledInAotMode
 @Import(SubscriptionService.class)
 class SubscriptionEndpointsTest {
 
+	@Autowired
+	ObjectMapper objectMapper;
+	
 	@Autowired
 	WebTestClient webTestClient;
 
@@ -78,7 +84,6 @@ class SubscriptionEndpointsTest {
 				.expectStatus().isOk().expectBodyList(Subscription.class)
 				.returnResult().getResponseBody();
 
-		assertThat(actual).isNotEmpty();
 		assertThat(actual).hasSize(1);
 	}
 
@@ -192,4 +197,52 @@ class SubscriptionEndpointsTest {
 			.ignoringFields("properties")
 			.isEqualTo(expected);
 	}
+	
+	@Test
+	@DisplayName("should serialize instant correctly")
+	void shouldSerializeInstantCorrectly() {
+		Subscription subscription = withAuditFields(hanSolo, 
+				Instant.parse("2025-01-26T08:51:06.581221355Z"), null, null);
+		
+		when(subscriptionRepository.findById(hanSolo.id())).thenReturn(Optional.of(subscription));
+		
+		webTestClient
+			.get().uri("/subscriptions/{id}", hanSolo.id())
+			.accept(MediaType.APPLICATION_JSON)
+			.exchange()
+			.expectStatus().isOk()
+			.expectBody()
+			// expected due to 'spring.jackson.default-property-inclusion: non-null' 
+			.jsonPath("$.modifiedOn").doesNotHaveJsonPath()
+			// expected due to 'spring.jackson.serialization.write-dates-as-timestamps: true'
+			.jsonPath("$.createdOn").isEqualTo("2025-01-26T08:51:06.581221355Z");
+	}
+
+	@Test
+	@DisplayName("should check hat 'fail-on-unknown-properties: false' correct")
+	void shouldNotFailOnUnknownProperties() {
+		Subscription newSubscription = subscription();
+		when(subscriptionRepository.existsById(newSubscription.id())).thenReturn(false);
+		when(subscriptionRepository.save(subscriptionCaptor.capture())).thenReturn(newSubscription);
+
+		// body with unknown properties
+		String jsonBody = """
+		{
+			"id": "4e39b4a8-916f-4ddd-ac25-1b9b76d20442",
+			"firstName": "Han",
+			"lastName": "Solo",
+			"email": "han.solo@example.com",
+			"dummy": "value"
+		}
+		""";
+
+		webTestClient
+			.post().uri("/subscriptions")
+			.accept(MediaType.APPLICATION_JSON)
+			.contentType(MediaType.APPLICATION_JSON)
+			.bodyValue(jsonBody)
+			.exchange()
+			.expectStatus().isCreated();
+	}
+	
 }

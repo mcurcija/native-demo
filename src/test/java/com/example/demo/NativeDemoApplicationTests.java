@@ -12,6 +12,7 @@ class NativeDemoApplicationTests {
 
 	@Test
 	void contextLoads() {
+		// just loads context
 	}
 
 }
