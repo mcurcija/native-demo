@@ -5,14 +5,14 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 
-@SuppressWarnings("serial")
 public class ApiException extends RuntimeException {
 
-	private HttpStatus status;
-	private URI type;
-	private String title;
-	private String detail;
-	private Map<String, Object> properties;
+	private static final long serialVersionUID = -1008494027525850987L;
+	private final HttpStatus status;
+	private final URI type;
+	private final String title;
+	private final String detail;
+	private final Map<String, Object> properties;
 
 	public ApiException(HttpStatus status, URI type, String title, String detail, Map<String, Object> properties) {
 		super(detail);

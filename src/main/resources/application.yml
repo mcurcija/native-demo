@@ -2,8 +2,22 @@ spring:
   application:
     name: native-demo  
   jackson:
-    serialization:
-      write-dates-as-timestamps: true
     deserialization:
       fail-on-unknown-properties: false
     default-property-inclusion: non-null 
+
+logbook:
+  filter:
+    enabled: true
+  predicate:
+    exclude:
+      0:
+        path: /ping
+
+logging:
+  level:
+    '[org.zalando.logbook]': WARN
+    '[org.springframework.web]': DEBUG
+  structured:
+    format:
+      console: logstash

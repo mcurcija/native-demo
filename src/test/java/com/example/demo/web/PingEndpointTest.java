@@ -17,7 +17,7 @@ class PingEndpointTest {
 	WebTestClient webTestClient;
 
 	@Test
-	public void shouldRespondToPingCorrectly() {
+	void shouldRespondToPingCorrectly() {
 		PingResponse actual = webTestClient
 				.get()
 				.uri("/ping")

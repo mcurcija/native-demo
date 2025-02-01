@@ -9,20 +9,15 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import com.example.demo.model.Subscription;
 import com.example.demo.model.SubscriptionFixture;
 import com.example.demo.shared.MongoDBConfiguration;
 import com.example.demo.shared.conf.TestMongoDBConfiguration;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @DataMongoTest
 @Import({ 
@@ -66,7 +61,7 @@ class SubscriptionRepositoryTest {
 				.ignoringFields(AUDIT_FIELD_NAMES).isEqualTo(subscription);
 
 		assertThat(stored.id()).isNotNull();
-		assertThat(stored.version()).isEqualTo(0);
+		assertThat(stored.version()).isZero();
 		assertThat(stored.createdOn()).isNotNull();
 		// NOTE ! modifiedOn and createdOn should equal
 		assertThat(stored.modifiedOn()).isEqualTo(stored.createdOn());
