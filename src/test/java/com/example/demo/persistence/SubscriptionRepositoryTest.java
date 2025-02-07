@@ -16,7 +16,7 @@ import org.springframework.dao.DuplicateKeyException;
 
 import com.example.demo.model.Subscription;
 import com.example.demo.model.SubscriptionFixture;
-import com.example.demo.shared.MongoDBConfiguration;
+import com.example.demo.shared.conf.MongoDBConfiguration;
 import com.example.demo.shared.conf.TestMongoDBConfiguration;
 
 @DataMongoTest

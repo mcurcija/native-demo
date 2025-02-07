@@ -1,0 +1,5 @@
+spring:
+  jackson:
+    serialization:
+      # native build fails sto serialize without it  
+      fail-on-empty-beans: false

@@ -1,4 +1,4 @@
-package com.example.demo.shared;
+package com.example.demo.shared.conf;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
