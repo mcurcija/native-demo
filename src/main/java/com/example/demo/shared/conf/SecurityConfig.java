@@ -1,5 +1,6 @@
 package com.example.demo.shared.conf;
 
+import static org.springframework.security.config.Customizer.withDefaults;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 import java.security.interfaces.RSAPrivateKey;
@@ -9,11 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -44,7 +42,7 @@ public class SecurityConfig {
 	SecurityFilterChain unsecuredChain(HttpSecurity http) throws Exception {
 		return http
 			.securityMatcher("/ping")
-			.csrf(Customizer.withDefaults())
+			.csrf(withDefaults())
 			.authorizeHttpRequests(authorize -> 
 				authorize.anyRequest().permitAll()
 			).build();
@@ -54,14 +52,14 @@ public class SecurityConfig {
 	@Order(2)
 	SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
 		return http
-			.csrf(Customizer.withDefaults())
+			.csrf(withDefaults())
 			.authorizeHttpRequests(authorize -> 
 				authorize.anyRequest().authenticated()
 			)
-			.httpBasic(Customizer.withDefaults())
-			.oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
+			.httpBasic(withDefaults())
+			.oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults()))
 			.sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
-			.exceptionHandling((exceptions) -> exceptions
+			.exceptionHandling(exceptions -> exceptions
 					.authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint())
 					.accessDeniedHandler(new BearerTokenAccessDeniedHandler())
 			)
