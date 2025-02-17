@@ -29,16 +29,20 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 
-	// logging
+	// provides support for spring security with JWT
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server' 
+	
+	// zalando logging
 	implementation 'org.zalando:logbook-spring-boot-starter:3.10.0'
 	implementation 'org.zalando:logbook-spring-boot-webflux-autoconfigure:3.10.0'
-	//implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
 	
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	testImplementation 'org.springframework.security:spring-security-test'
+	
 	testImplementation 'org.testcontainers:junit-jupiter'
 	testImplementation 'org.testcontainers:mongodb'
 	

@@ -4,7 +4,15 @@ spring:
   jackson:
     deserialization:
       fail-on-unknown-properties: false
-    default-property-inclusion: non-null 
+    serialization:
+      # native build fails to serialize without it  
+      fail-on-empty-beans: true
+    default-property-inclusion: non-null
+  security:
+    user:
+      name: user
+      password: secret
+      roles: app
 
 logbook:
   filter:
@@ -21,3 +29,8 @@ logging:
   structured:
     format:
       console: logstash
+
+
+jwt:
+  private.key: classpath:app.key
+  public.key: classpath:app.pub	

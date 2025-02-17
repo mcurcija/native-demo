@@ -20,11 +20,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -33,13 +35,14 @@ import org.springframework.web.reactive.function.BodyInserters;
 import com.example.demo.model.Subscription;
 import com.example.demo.persistence.SubscriptionRepository;
 import com.example.demo.service.SubscriptionService;
+import com.example.demo.shared.conf.SecurityConfig;
 import com.example.demo.shared.exceptions.DuplicateSupbsciptionException;
 import com.example.demo.shared.exceptions.SubscriptionNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @WebMvcTest(SubscriptionEndpoints.class)
 @DisabledInAotMode
-@Import(SubscriptionService.class)
+@Import({ SubscriptionService.class, SecurityConfig.class, TokenService.class })
 class SubscriptionEndpointsTest {
 
 	@Autowired
@@ -57,6 +60,15 @@ class SubscriptionEndpointsTest {
 	@Captor
 	ArgumentCaptor<Subscription> subscriptionCaptor;
 
+	@Autowired
+	TokenService tokenService;
+	
+	@Value("spring.security.user.name")
+	String username;
+
+	@Value("spring.security.user.password")
+	String password;
+	
 	@Test
 	@DisplayName("should get single subscription")
 	void shouldGetSingleCorrectly() {
@@ -65,6 +77,7 @@ class SubscriptionEndpointsTest {
 		var actual = webTestClient
 				.get().uri("/subscriptions/{id}", hanSolo.id())
 				.accept(MediaType.APPLICATION_JSON)
+				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 				.exchange()
 				.expectStatus().isOk().expectBody(Subscription.class)
 				.returnResult().getResponseBody();
@@ -80,7 +93,9 @@ class SubscriptionEndpointsTest {
 
 		var actual = webTestClient
 				.get().uri("/subscriptions")
-				.accept(MediaType.APPLICATION_JSON).exchange()
+				.accept(MediaType.APPLICATION_JSON)
+				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
+				.exchange()
 				.expectStatus().isOk().expectBodyList(Subscription.class)
 				.returnResult().getResponseBody();
 
@@ -98,6 +113,7 @@ class SubscriptionEndpointsTest {
 		Subscription actual = webTestClient
 				.post().uri("/subscriptions")
 				.contentType(MediaType.APPLICATION_JSON)
+				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 				.accept(MediaType.APPLICATION_JSON)
 				.body(BodyInserters.fromValue(newSubscription))
 				.exchange()
@@ -116,7 +132,8 @@ class SubscriptionEndpointsTest {
 		
 		when(subscriptionRepository.existsById(id)).thenReturn(true);
 		
-		webTestClient.delete().uri("/subscriptions/{id}", id)	
+		webTestClient.delete().uri("/subscriptions/{id}", id)
+				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 				.exchange()
 				.expectStatus()
 				.isNoContent();
@@ -133,7 +150,8 @@ class SubscriptionEndpointsTest {
 		SubscriptionNotFoundException notFoundException = new SubscriptionNotFoundException(id);
 		ProblemDetail expected = problemDetailFor(notFoundException, "/subscriptions/%s".formatted(id));
 
-		var actual = webTestClient.delete().uri("/subscriptions/{id}", id)	
+		var actual = webTestClient.delete().uri("/subscriptions/{id}", id)
+				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 				.exchange()
 				.expectStatus().isNotFound()
 				.expectBody(ProblemDetail.class)
@@ -162,6 +180,7 @@ class SubscriptionEndpointsTest {
 				.post().uri("/subscriptions")
 				.contentType(MediaType.APPLICATION_JSON)
 				.accept(MediaType.APPLICATION_JSON)
+				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 				.body(BodyInserters.fromValue(newSubscription))
 				.exchange()
 				.expectStatus().isEqualTo(HttpStatus.CONFLICT.value())
@@ -187,6 +206,7 @@ class SubscriptionEndpointsTest {
 		ProblemDetail actual = webTestClient
 				.get().uri("/subscriptions/{id}", inexistentId)
 				.accept(MediaType.APPLICATION_JSON)
+				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 				.exchange()
 				.expectStatus().isNotFound()
 				.expectBody(ProblemDetail.class)
@@ -209,6 +229,7 @@ class SubscriptionEndpointsTest {
 		webTestClient
 			.get().uri("/subscriptions/{id}", hanSolo.id())
 			.accept(MediaType.APPLICATION_JSON)
+			.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 			.exchange()
 			.expectStatus().isOk()
 			.expectBody()
@@ -239,10 +260,15 @@ class SubscriptionEndpointsTest {
 		webTestClient
 			.post().uri("/subscriptions")
 			.accept(MediaType.APPLICATION_JSON)
+			.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 			.contentType(MediaType.APPLICATION_JSON)
 			.bodyValue(jsonBody)
 			.exchange()
 			.expectStatus().isCreated();
+	}
+
+	private UsernamePasswordAuthenticationToken configuredAuthentication() {
+		return new UsernamePasswordAuthenticationToken(username, password);
 	}
 	
 }
