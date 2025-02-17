@@ -32,5 +32,5 @@ logging:
 
 
 jwt:
-  private.key: classpath:app.key
-  public.key: classpath:app.pub	
+  private.key: classpath:rsa/app.key
+  public.key: classpath:rsa/app.pub	

@@ -10,12 +10,18 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import com.example.demo.shared.conf.CustomAccessDeniedHandler;
+import com.example.demo.shared.conf.CustomAuthenticationExceptionEntryPoint;
 import com.example.demo.shared.conf.SecurityConfig;
 import com.example.demo.web.PingEndpoint.PingResponse;
 
 @WebMvcTest(PingEndpoint.class)
 @ActiveProfiles("test")
-@Import({ SecurityConfig.class })
+@Import({ 
+	SecurityConfig.class, 
+	CustomAuthenticationExceptionEntryPoint.class,
+	CustomAccessDeniedHandler.class
+})
 class PingEndpointTest {
 
 	@Autowired

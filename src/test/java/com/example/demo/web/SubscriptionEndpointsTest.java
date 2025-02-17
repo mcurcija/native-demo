@@ -4,6 +4,9 @@ import static com.example.demo.model.SubscriptionFixture.hanSolo;
 import static com.example.demo.model.SubscriptionFixture.subscription;
 import static com.example.demo.model.SubscriptionFixture.withAuditFields;
 import static com.example.demo.shared.exceptions.ProblemDetailUtils.problemDetailFor;
+import static com.example.demo.web.APIConstants.PATH_EXT_API;
+import static com.example.demo.web.SubscriptionEndpoints.PATH_SINGLE_SUBSCRIPTION;
+import static com.example.demo.web.SubscriptionEndpoints.PATH_SUBSCRIPTIONS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -20,13 +23,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -35,6 +39,8 @@ import org.springframework.web.reactive.function.BodyInserters;
 import com.example.demo.model.Subscription;
 import com.example.demo.persistence.SubscriptionRepository;
 import com.example.demo.service.SubscriptionService;
+import com.example.demo.shared.conf.CustomAccessDeniedHandler;
+import com.example.demo.shared.conf.CustomAuthenticationExceptionEntryPoint;
 import com.example.demo.shared.conf.SecurityConfig;
 import com.example.demo.shared.exceptions.DuplicateSupbsciptionException;
 import com.example.demo.shared.exceptions.SubscriptionNotFoundException;
@@ -42,7 +48,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @WebMvcTest(SubscriptionEndpoints.class)
 @DisabledInAotMode
-@Import({ SubscriptionService.class, SecurityConfig.class, TokenService.class })
+@Import({ 
+	SecurityConfig.class,
+	SubscriptionService.class, 
+	TokenService.class,
+	CustomAuthenticationExceptionEntryPoint.class,
+	CustomAccessDeniedHandler.class
+})
 class SubscriptionEndpointsTest {
 
 	@Autowired
@@ -63,19 +75,16 @@ class SubscriptionEndpointsTest {
 	@Autowired
 	TokenService tokenService;
 	
-	@Value("spring.security.user.name")
-	String username;
+	@Autowired
+	SecurityProperties securityProperties;
 
-	@Value("spring.security.user.password")
-	String password;
-	
 	@Test
 	@DisplayName("should get single subscription")
-	void shouldGetSingleCorrectly() {
+	void shouldGetSingleSubscription() {
 		when(subscriptionRepository.findById(hanSolo.id())).thenReturn(Optional.of(hanSolo));
 		
-		var actual = webTestClient
-				.get().uri("/subscriptions/{id}", hanSolo.id())
+		var actual = clientExtApi()
+				.get().uri(PATH_SINGLE_SUBSCRIPTION, hanSolo.id())
 				.accept(MediaType.APPLICATION_JSON)
 				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 				.exchange()
@@ -87,12 +96,12 @@ class SubscriptionEndpointsTest {
 
 	@Test
 	@DisplayName("should get all subscriptions")
-	void shouldGetAllCorrectly() {
+	void shouldGetAllSubscriptions() {
 		// mock find all
 		when(subscriptionRepository.findAll()).thenReturn(List.of(subscription()));
 
-		var actual = webTestClient
-				.get().uri("/subscriptions")
+		var actual = clientExtApi()
+				.get().uri(PATH_SUBSCRIPTIONS)
 				.accept(MediaType.APPLICATION_JSON)
 				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 				.exchange()
@@ -104,20 +113,20 @@ class SubscriptionEndpointsTest {
 
 	@Test
 	@DisplayName("should post subscription")	
-	void shouldPostSubscriptionCorrectly() {
+	void shouldPostSubscription() {
 		Subscription newSubscription = subscription();
 
 		when(subscriptionRepository.existsById(newSubscription.id())).thenReturn(false);
 		when(subscriptionRepository.save(subscriptionCaptor.capture())).thenReturn(newSubscription);
 
-		Subscription actual = webTestClient
-				.post().uri("/subscriptions")
+		Subscription actual = clientExtApi()
+				.post().uri(PATH_SUBSCRIPTIONS)
 				.contentType(MediaType.APPLICATION_JSON)
 				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 				.accept(MediaType.APPLICATION_JSON)
 				.body(BodyInserters.fromValue(newSubscription))
 				.exchange()
-				.expectHeader().location("http://localhost/subscriptions/%s".formatted(newSubscription.id()))
+				.expectHeader().location("http://localhost/ext/api/1.0/subscriptions/%s".formatted(newSubscription.id()))
 				.expectStatus().isCreated().expectBody(Subscription.class)
 				.returnResult().getResponseBody();
 
@@ -127,12 +136,13 @@ class SubscriptionEndpointsTest {
 
 	@Test	
 	@DisplayName("should delete subscription")
-	void shouldDeleteSubscriptionCorrectly() {
+	void shouldDeleteSubscription() {
 		UUID id = UUID.randomUUID();
 		
 		when(subscriptionRepository.existsById(id)).thenReturn(true);
 		
-		webTestClient.delete().uri("/subscriptions/{id}", id)
+		clientExtApi()
+			.delete().uri(PATH_SINGLE_SUBSCRIPTION, id)
 				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 				.exchange()
 				.expectStatus()
@@ -141,16 +151,17 @@ class SubscriptionEndpointsTest {
 	}
 
 	@Test
-	@DisplayName("should throw subscription not foundon when deleting inexistent")	
-	void shouldThrowSubscriptionNotFoundOnDeleteInexistentSubscription() {
+	@DisplayName("should throw subscription not found when deleting inexistent subscription")	
+	void shouldThrowSubscriptionNotFoundWhenDeletingInexistentSubscription() {
 		UUID id = UUID.randomUUID();
 		
 		when(subscriptionRepository.existsById(id)).thenReturn(false);
 		
 		SubscriptionNotFoundException notFoundException = new SubscriptionNotFoundException(id);
-		ProblemDetail expected = problemDetailFor(notFoundException, "/subscriptions/%s".formatted(id));
+		ProblemDetail expected = problemDetailFor(notFoundException, "/ext/api/1.0/subscriptions/%s".formatted(id));
 
-		var actual = webTestClient.delete().uri("/subscriptions/{id}", id)
+		var actual = clientExtApi()
+				.delete().uri("/subscriptions/{id}", id)
 				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 				.exchange()
 				.expectStatus().isNotFound()
@@ -174,10 +185,10 @@ class SubscriptionEndpointsTest {
 		when(subscriptionRepository.existsById(newSubscription.id())).thenReturn(true);
 
 		DuplicateSupbsciptionException duplicateSubscriptionException = new DuplicateSupbsciptionException(id);
-		ProblemDetail expected = problemDetailFor(duplicateSubscriptionException, "/subscriptions");
+		ProblemDetail expected = problemDetailFor(duplicateSubscriptionException, "/ext/api/1.0/subscriptions");
 		
-		ProblemDetail actual = webTestClient
-				.post().uri("/subscriptions")
+		ProblemDetail actual = clientExtApi()
+				.post().uri(PATH_SUBSCRIPTIONS)
 				.contentType(MediaType.APPLICATION_JSON)
 				.accept(MediaType.APPLICATION_JSON)
 				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
@@ -194,6 +205,7 @@ class SubscriptionEndpointsTest {
 	}
 	
 	@Test
+	@DisplayName("should result with subscription not found exception")
 	void shouldResultWithSubscriptionNotFoundException() {
 		UUID inexistentId = UUID.randomUUID();
 		Subscription newSubscription = subscription(inexistentId);
@@ -201,10 +213,13 @@ class SubscriptionEndpointsTest {
 		// return empty optional 
 		when(subscriptionRepository.findById(newSubscription.id())).thenReturn(Optional.empty());
 
-		ProblemDetail expected = problemDetailFor(new SubscriptionNotFoundException(inexistentId), "/subscriptions/%s".formatted(inexistentId));
+		ProblemDetail expected = problemDetailFor(
+				new SubscriptionNotFoundException(inexistentId), 
+				"/ext/api/1.0/subscriptions/%s".formatted(inexistentId)
+		);
 		
-		ProblemDetail actual = webTestClient
-				.get().uri("/subscriptions/{id}", inexistentId)
+		ProblemDetail actual = clientExtApi()
+				.get().uri(PATH_SINGLE_SUBSCRIPTION, inexistentId)
 				.accept(MediaType.APPLICATION_JSON)
 				.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 				.exchange()
@@ -226,8 +241,8 @@ class SubscriptionEndpointsTest {
 		
 		when(subscriptionRepository.findById(hanSolo.id())).thenReturn(Optional.of(subscription));
 		
-		webTestClient
-			.get().uri("/subscriptions/{id}", hanSolo.id())
+		clientExtApi()
+			.get().uri(PATH_SINGLE_SUBSCRIPTION, hanSolo.id())
 			.accept(MediaType.APPLICATION_JSON)
 			.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 			.exchange()
@@ -240,7 +255,7 @@ class SubscriptionEndpointsTest {
 	}
 
 	@Test
-	@DisplayName("should check hat 'fail-on-unknown-properties: false' correct")
+	@DisplayName("should not fail on unknown properties")
 	void shouldNotFailOnUnknownProperties() {
 		Subscription newSubscription = subscription();
 		when(subscriptionRepository.existsById(newSubscription.id())).thenReturn(false);
@@ -257,8 +272,8 @@ class SubscriptionEndpointsTest {
 		}
 		""";
 
-		webTestClient
-			.post().uri("/subscriptions")
+		clientExtApi()
+			.post().uri(PATH_SUBSCRIPTIONS)
 			.accept(MediaType.APPLICATION_JSON)
 			.header("authorization", "Bearer " + tokenService.token(configuredAuthentication()))
 			.contentType(MediaType.APPLICATION_JSON)
@@ -267,8 +282,11 @@ class SubscriptionEndpointsTest {
 			.expectStatus().isCreated();
 	}
 
-	private UsernamePasswordAuthenticationToken configuredAuthentication() {
-		return new UsernamePasswordAuthenticationToken(username, password);
+	private Authentication configuredAuthentication() {
+		return new TestingAuthenticationToken("user", null, SubscriptionService.SUBSCRIPTION_ADMIN);
 	}
 	
+	private WebTestClient clientExtApi() {
+		return webTestClient.mutate().baseUrl(PATH_EXT_API).build();
+	}
 }

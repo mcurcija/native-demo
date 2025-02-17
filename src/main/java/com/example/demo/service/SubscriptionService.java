@@ -16,6 +16,7 @@ import com.example.demo.shared.exceptions.SubscriptionNotFoundException;
 public class SubscriptionService {
 	
 	private final SubscriptionRepository subscriptionRepository;
+	public static final String SUBSCRIPTION_ADMIN = "subscriptionAdmin";
 
 	public SubscriptionService(SubscriptionRepository subscriptionRepository) {
 		this.subscriptionRepository = subscriptionRepository;
